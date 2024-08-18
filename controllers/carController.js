@@ -1,0 +1,182 @@
+import upload from "../config/multer.js";
+import {Car} from "../models/carModel.js"
+import { Dealer } from "../models/dealerModel.js";
+import { uploadCarImages } from "../config/cloudinary.js"
+
+
+//Create a car
+export const createCar = async (req, res, next) => {
+    try {
+        uploadCarImages.array('images', 5)(req, res, async (err) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Image upload failed', error: err.message });
+            }
+
+            const {
+                name, description, make, model, fuelType,
+                transmission, color, seating, mileage, reviews, dealer, 
+                bookedTimeSlots, rentPerHour
+            } = req.body;
+
+            // Check if all required fields are provided
+            if (!name || !description || !make || !model || !fuelType || 
+                !transmission || !color || !seating || !mileage || !rentPerHour || !dealer) {
+                return res.status(400).json({ success: false, message: "All fields are mandatory" });
+            }
+
+            // Check if dealer exists
+            const dealerDetail = await Dealer.findOne({ name: dealer });
+            if (!dealerDetail) {
+                return res.status(404).json({ success: false, message: "Dealer not found" });
+            }
+
+            // Check if a car with the same name and dealer already exists
+            const carExists = await Car.findOne({ name, dealer: dealerDetail._id });
+            if (carExists) {
+                return res.status(409).json({ success: false, message: "Car already exists" });
+            }
+
+            // Handle images uploaded to Cloudinary
+            const images = req.files.map(file => file.path);
+
+            // Create a new car
+            const newCar = new Car({
+                name, images, description, make, model, fuelType,
+                transmission, color, seating, mileage, reviews, dealer: dealerDetail._id,
+                bookedTimeSlots, rentPerHour
+            });
+
+            // Save the new car to the database
+            await newCar.save();
+
+            res.status(201).json({ success: true, message: "Car created successfully", data: newCar });
+        });
+    } catch (error) {
+        console.error("Error creating car:", error.message);
+        res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
+
+export const getACar = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const car = await Car.findById(id)
+            .populate({
+                path: 'reviews',  
+                populate: {
+                    path: 'user',  
+                    select: 'name email'  
+                }
+            })
+            .populate({
+                path: 'dealer',  
+                select: 'name location phone email'  
+            })
+            .exec();
+
+        if (!car) {
+            return res.status(404).json({ success: false, message: "Car not found" });
+        }
+
+        res.json({ success: true, message: "Car fetched successfully", data: car });
+    } catch (error) {
+        console.error("Error fetching car:", error.message);
+        res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
+
+
+
+//Get all cars
+export const getCarsList = async (req, res, next) => {
+    try {
+        const cars = await Car.find()
+            .populate('reviews')  
+            .populate('dealer', 'name email phone location') 
+            .exec();
+
+        res.json({ success: true, message: "Fetched cars list successfully", data: cars });
+    } catch (error) {
+        console.error("Error fetching cars list:", error.message);
+        res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
+
+// Update a car
+export const updateCar = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const car = await Car.findById(id);
+
+        if (!car) {
+            return res.status(404).json({ success: false, message: "Car not found" });
+        }
+
+        const {
+            name, images, description, make, model, fuelType,
+            transmission, color, seating, mileage, review, bookedTimeSlots, rentPerHour, dealer
+        } = req.body;
+
+        // Check if a car with the same name and dealer already exists (excluding current car)
+        if (name && dealer) {
+            const dealerDetail = await Dealer.findOne({ name: dealer });
+            if (!dealerDetail) {
+                return res.status(404).json({ success: false, message: "Dealer not found" });
+            }
+            const carExists = await Car.findOne({ name, dealer: dealerDetail._id, _id: { $ne: id } });
+            if (carExists) {
+                return res.status(409).json({ success: false, message: "Another car with the same name and dealer already exists" });
+            }
+        }
+
+        const updatedCar = await Car.findByIdAndUpdate(
+            id,
+            {
+                name, images, description, make, model, fuelType,
+                transmission, color, seating, mileage, review, bookedTimeSlots, rentPerHour,
+                dealer: dealer ? dealerDetail._id : car.dealer 
+            },
+            { new: true }
+        )
+        .populate({
+            path: 'reviews',
+            populate: {
+                path: 'user',
+                select: 'name email'
+            }
+        })
+        .populate({
+            path: 'dealer',
+            select: 'name location phone email'
+        })
+        .exec();
+
+        res.json({ success: true, message: "Car updated successfully", data: updatedCar });
+    } catch (error) {
+        console.error("Error updating car:", error.message);
+        res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
+
+
+//Delete a car
+export const deleteCar = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const car = await Car.findById(id);
+
+        if (!car) {
+            return res.status(404).json({ success: false, message: "Car not found" });
+        }
+
+        await car.deleteOne();
+
+        res.status(200).json({ success: true, message: "Car deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
+

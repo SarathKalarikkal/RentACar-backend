@@ -1,0 +1,215 @@
+import { Reservation } from "../models/reservationModel.js";
+import {Car} from "../models/carModel.js"
+
+
+//create reservation
+export const createReservation = async(req, res, next) => {
+   try {
+      const { carId, startDate, endDate, totalPrice } = req.body;
+      const userId = req.user._id;
+
+      // Convert date from DD-MM-YYYY to YYYY-MM-DD
+      const formatDate = (dateString) => {
+         const [day, month, year] = dateString.split('-');
+         return new Date(`${year}-${month}-${day}`);
+      };
+
+      // Validate and convert dates
+      const start = formatDate(startDate);
+      const end = formatDate(endDate);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+         return res.status(400).json({ success: false, message: "Invalid date format" });
+      }
+
+      if (start >= end) {
+         return res.status(400).json({ success: false, message: "Start date must be before end date" });
+      }
+
+      if (!startDate || !endDate || !totalPrice) {
+         return res.status(400).json({ success: false, message: "All fields are required" });
+      }
+
+      console.log("carId", carId);
+      const car = await Car.findById(carId);
+
+      if (!car) {
+         return res.status(404).json({ success: false, message: "Car not found" });
+      }
+
+      // Create a new reservation with status pending
+      const reservation = new Reservation({
+         car: carId,
+         user: userId,
+         startDate: start,
+         endDate: end,
+         totalPrice,
+      });
+      await reservation.save();
+
+      res.status(201).json({ success: true, message: "Reservation created, awaiting approval", data: reservation });
+
+   } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
+
+
+
+//approveReservation 
+export const approveReservation  = async(req, res, next)=>{
+   try {
+      
+      const {reservationId} =  req.params
+      const reservation = await Reservation.findById(reservationId)
+
+      if (!reservation) {
+         return res.status(404).json({ success: false, message: "Reservation not found" });
+     }
+
+     if (reservation.status !== 'pending') {
+      return res.status(400).json({ success: false, message: "Only pending reservations can be approved" });
+  }
+
+     reservation.status = 'confirmed'
+     reservation.updatedAt = Date.now()
+     await reservation.save()
+
+     res.json({ success: true, message: "Reservation approved", data: reservation });
+
+   } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
+
+
+
+// getPendingReservations 
+
+export const getPendingReservations  = async(req, res, next)=>{
+   try {
+      
+      const pendingReservations = await Reservation.find({ status: 'pending' }).populate('car user')
+      res.json({ success: true, message: "Pending reservations fetched", data: pendingReservations });
+
+   } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
+
+
+
+export const getAllReservations = async(req, res, next)=>{
+   try {
+      
+   const reservation = await Reservation.find().populate('car').populate('user')
+
+   res.json({ success: true, message: "Reservation fetched successfully", data: reservation });
+
+   } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
+
+// Get reservations for a specific user
+export const getUserReservation = async(req, res, next)=>{
+   try {
+      const {userId} = req.params
+
+      const reservations = await Reservation.find({user : userId}).populate('car')
+
+      if (reservations.length === 0) {
+         return res.status(404).json({ success: false, message: "No reservations found for this user" });
+     }
+
+      res.json({ success: true, message: "User reservations fetched successfully", data: reservations }); 
+
+   } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
+
+//update Reservation
+export const updateReservation =async(req, res, next)=>{
+   try {
+
+      const {reservationId} = req.params
+      const {startDate, endDate} = req.body
+
+      const reservation = await Reservation.findById(reservationId)
+
+      if (!reservation) {
+         return res.status(404).json({ success: false, message: "Reservation not found" });
+     }
+
+     if (reservation.status !== 'pending') {
+      return res.status(400).json({ success: false, message: "Cannot update a reservation that is not pending" });
+  }
+
+        reservation.startDate = startDate;
+        reservation.endDate = endDate;
+        reservation.updatedAt = Date.now();
+
+        await reservation.save();
+
+        res.json({ success: true, message: "Reservation updated successfully", data: reservation });
+      
+   } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
+
+
+// Cancel a reservation
+
+export const cancelReservation = async (req, res,next)=>{
+   try {
+      
+     const {reservationId} = req.params
+
+     const reservation = await Reservation.findById(reservationId);
+
+     if (!reservation) {
+      return res.status(404).json({ success: false, message: "Reservation not found" });
+  }
+
+  if(reservation.status === 'completed'){
+   return res.status(400).json({ success: false, message: "Cannot cancel a completed reservation" });
+  }
+
+  reservation.status = 'cancelled';
+  reservation.updatedAt = Date.now();
+
+  await reservation.save();
+    
+  res.json({ success: true, message: "Reservation canceled successfully", data: reservation });
+
+   } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
+
+
+
+
+
+
+export const getUserReservations = async (req, res) => {
+   try {
+       const userId = req.user.id;
+
+       
+
+       // Fetch reservations associated with the user
+       const reservations = await Reservation.find({ user: userId }).populate('car', 'make model');
+
+       if (!reservations.length) {
+           return res.status(404).json({ success: false, message: "No reservations found for this user" });
+       }
+
+       res.json({ success: true, message: "User reservations fetched successfully", data: reservations });
+   } catch (error) {
+       console.error('Error fetching user reservations:', error.message);
+       res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+};
