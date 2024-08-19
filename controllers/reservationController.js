@@ -36,7 +36,11 @@ export const createReservation = async(req, res, next) => {
       if (!car) {
          return res.status(404).json({ success: false, message: "Car not found" });
       }
+       const existReservation = await Reservation.findOne({car : carId})
 
+       if(existReservation){
+         return res.status(404).json({ success: false, message: "Car already reserved" });
+       }
       // Create a new reservation with status pending
       const reservation = new Reservation({
          car: carId,

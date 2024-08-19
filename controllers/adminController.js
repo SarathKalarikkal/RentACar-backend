@@ -2,6 +2,9 @@ import {User} from "../models/userModel.js"
 import {Car} from "../models/carModel.js"
 import {Reservation} from "../models/reservationModel.js"
 import { Dealer } from "../models/dealerModel.js";
+import { Admin } from "../models/adminModel.js";
+import bcrypt from "bcrypt";
+import { generateToken } from "../utils/generateToken.js";
 
 
 
@@ -139,3 +142,116 @@ export const deleteReservation = async (req, res, next) => {
         res.status(500).json({ success: false, message: error.message || "Internal server error" });
     }
 };
+
+
+//admin signup
+export const adminSignup = async (req, res, next)=>{
+    try {
+     
+     const {name, email, password} = req.body
+    
+     if(!name|| !email || !password) {
+         return res.status(401).json({success : false, message : "All fields are mandatory"})
+     }
+ 
+     const adminExist = await Admin.findOne({email})
+ 
+     if(adminExist){
+         return res.status(404).json({ success: false, message: "Already one admin exist" });
+     }
+ 
+     // Hashing the password
+     const salt = 10;
+     const hashedPassword = bcrypt.hashSync(password, salt);
+ 
+        const admin = new Admin({
+            name,
+            email,
+            password: hashedPassword,
+            role: "Admin"
+        });
+        await admin.save()
+   
+
+        const id = admin._id.toString();
+        const role = admin.role;
+
+          // Create token
+          const token = generateToken(id, email, role);
+ 
+ 
+          res.cookie("token", token);
+        res.status(201).json({ success: true, message: "Admin created successfully", data: admin });
+    
+ 
+    } catch (error) {
+     res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+ }
+
+//Admin login
+
+export const adminLogin = async (req, res, next)=>{
+   try {
+    
+    const {email, password} = req.body
+   
+    if(!email || !password) {
+        return res.status(401).json({success : false, message : "All fields are mandatory"})
+    }
+
+    const adminExist = await Admin.findOne({email})
+
+    if(!adminExist){
+        return res.status(404).json({ success: false, message: "You are not a admin" });
+    }
+
+    const isMatch = bcrypt.compareSync(password, adminExist.password);
+        if (!isMatch) {
+            return res.status(401).json({ success: false, message: "Invalid credentials" });
+        }
+
+        const id = adminExist._id.toString();
+        const role = adminExist.role;
+
+         // Create token
+         const token = generateToken(id, email, role);
+
+         res.cookie("token", token);
+
+         res.status(200).json({ success: true, message: "Admin logged in successfully" });
+
+
+   } catch (error) {
+    res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
+
+
+//logout
+export const adminLogout = async (req, res, next)=>{
+    try {
+        res.clearCookie("token");
+        res.status(200).json({ success: true, message: "Admin logged out successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+}
+
+
+// Admin Auth
+export const checkAdmin = async(req, res, next) => {
+    try {
+        const user = req.user;
+
+        console.log(user);
+        
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: "Admin not authenticated" });
+        }
+        res.status(200).json({ success: true, message: "admin authenticated" });
+    } catch (error) {
+        res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
+    }
+}

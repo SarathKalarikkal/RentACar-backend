@@ -57,6 +57,10 @@ export const dealerLogin = async(req, res, next) => {
     try {
         const { email, password } = req.body;
 
+        if(!email || !password){
+            return res.status(401).json({ success: false, message: "All fields are mandatory" });
+        }
+
         const dealerExist = await Dealer.findOne({ email });
         if (!dealerExist) {
             return res.status(404).json({ success: false, message: "Dealer does not exist" });
