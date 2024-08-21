@@ -1,11 +1,12 @@
 import express from "express"
 import { createDealer, dealerLogin, dealerProfile, checkDealer, dealerUpdate, dealerLogout, getAllDealers} from "../../controllers/dealerController.js"
 import { authDealer } from "../../middlewares/authDealer.js"
-import { uploadDealerProfilePic } from "../../config/cloudinary.js";
+import { upload } from "../../middlewares/uploadMiddileware.js";
+
 
 const router = express.Router()
 
-router.post('/create',uploadDealerProfilePic.single('profilePic'),createDealer);
+router.post('/create',upload.single('image'), createDealer);
 router.post('/login', dealerLogin);
 router.get('/logout', authDealer, dealerLogout);
 router.get('/list', getAllDealers);

@@ -7,6 +7,11 @@ export const createDealer = async (req, res, next) => {
     try {
         const { name, email, phone, role, password, cars, location } = req.body;
 
+        const uploadResult = await cloudinaryInstance.uploader.upload(req.file.path).catch((error)=>{
+            console.log(error);
+            
+        })
+
         if (!name || !email || !password || !role || !phone || !location) {
             return res.status(400).json({ success: false, message: "All fields are required" });
         }
@@ -32,7 +37,7 @@ export const createDealer = async (req, res, next) => {
             email,
             password: hashedPassword,
             role,
-            profilePic: profilePicUrl,
+            profilePic: uploadResult.url,
             cars,
             phone,
             location

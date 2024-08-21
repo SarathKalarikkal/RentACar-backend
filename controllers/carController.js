@@ -1,56 +1,74 @@
-import upload from "../config/multer.js";
+
+import { cloudinaryInstance } from "../config/cloudinaryConfig.js";
 import {Car} from "../models/carModel.js"
 import { Dealer } from "../models/dealerModel.js";
-import { uploadCarImages } from "../config/cloudinary.js"
+
 
 
 //Create a car
 export const createCar = async (req, res, next) => {
     try {
-        uploadCarImages.array('images', 5)(req, res, async (err) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Image upload failed', error: err.message });
+        const {
+            name, description, make, model, fuelType,
+            transmission, color, seating, mileage, reviews, dealer, 
+            bookedTimeSlots, rentPerHour
+        } = req.body;
+
+        //  console.log("===", req.files);
+           // Upload an image
+           let images =[]
+           let uploadResult;
+           if (req.files && req.files.length > 0) {
+            try {
+                 uploadResult = await Promise.all(
+                    req.files.map(async (file) => {
+                        const result = await cloudinaryInstance.uploader.upload(file.path);
+                        return result.secure_url; // Cloudinary returns the uploaded image's URL
+                    })
+                );
+        
+                // Push the upload results to the images array
+                uploadResult.forEach((url) => images.push(url));
+                
+        
+            } catch (error) {
+                console.error("Error uploading images:", error);
+                return res.status(500).json({ success: false, message: "Image upload failed" });
             }
+        }
 
-            const {
-                name, description, make, model, fuelType,
-                transmission, color, seating, mileage, reviews, dealer, 
-                bookedTimeSlots, rentPerHour
-            } = req.body;
+         
+    
+        // Validate mandatory fields
+        if (!name  || !description || !make || !model || !fuelType || 
+            !transmission || !color || !seating || !mileage || !rentPerHour || !dealer) {
+            return res.status(400).json({ success: false, message: "All fields are mandatory" });
+        }
+    
+        // Validate dealer
+        const dealerDetail = await Dealer.findOne({ name: dealer });
+        if (!dealerDetail) {
+            return res.status(404).json({ success: false, message: "Dealer not found" });
+        }
+    
+        // Check if car already exists
+        const carExists = await Car.findOne({ name, dealer: dealerDetail._id });
+        if (carExists) {
+            return res.status(409).json({ success: false, message: "Car already exists" });
+        }
 
-            // Check if all required fields are provided
-            if (!name || !description || !make || !model || !fuelType || 
-                !transmission || !color || !seating || !mileage || !rentPerHour || !dealer) {
-                return res.status(400).json({ success: false, message: "All fields are mandatory" });
-            }
-
-            // Check if dealer exists
-            const dealerDetail = await Dealer.findOne({ name: dealer });
-            if (!dealerDetail) {
-                return res.status(404).json({ success: false, message: "Dealer not found" });
-            }
-
-            // Check if a car with the same name and dealer already exists
-            const carExists = await Car.findOne({ name, dealer: dealerDetail._id });
-            if (carExists) {
-                return res.status(409).json({ success: false, message: "Car already exists" });
-            }
-
-            // Handle images uploaded to Cloudinary
-            const images = req.files.map(file => file.path);
-
-            // Create a new car
-            const newCar = new Car({
-                name, images, description, make, model, fuelType,
-                transmission, color, seating, mileage, reviews, dealer: dealerDetail._id,
-                bookedTimeSlots, rentPerHour
-            });
-
-            // Save the new car to the database
-            await newCar.save();
-
-            res.status(201).json({ success: true, message: "Car created successfully", data: newCar });
+       
+     
+        // Create new car
+        const newCar = new Car({
+            name,images:uploadResult, description, make, model, fuelType,
+            transmission, color, seating, mileage, reviews, dealer: dealerDetail._id,
+            bookedTimeSlots, rentPerHour
         });
+
+        await newCar.save();
+
+        res.status(201).json({ success: true, message: "Car created successfully", data: newCar});
     } catch (error) {
         console.error("Error creating car:", error.message);
         res.status(500).json({ success: false, message: error.message || "Internal server error" });

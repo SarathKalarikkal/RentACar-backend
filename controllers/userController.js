@@ -1,21 +1,29 @@
 import { User } from "../models/userModel.js";
 import bcrypt from 'bcrypt'
 import { generateToken } from "../utils/generateToken.js";
-import { uploadProfilePic } from "../config/cloudinary.js";
+import { cloudinaryInstance } from "../config/cloudinaryConfig.js";
+
 
 // Create User
 export const userCreate = async (req, res, next) => {
     try {
-        uploadProfilePic.single('profilePic')(req, res, async (err) => {
-            if (err) {
-                return res.status(500).json({ success: false, message: 'Image upload failed', error: err.message });
-            }
 
             const { name, email, password, mobile } = req.body;
+
+            // console.log(req.file);
+            
+
+            const uploadResult = await cloudinaryInstance.uploader.upload(req.file.path).catch((error)=>{
+                console.log(error);
+                
+            })
+            // console.log(uploadResult.url)
+
 
             if (!name || !email || !password || !mobile) {
                 return res.status(400).json({ success: false, message: "All fields are required" });
             }
+
 
             const userExist = await User.findOne({ email });
 
@@ -27,11 +35,10 @@ export const userCreate = async (req, res, next) => {
             const salt = 10;
             const hashedPassword = bcrypt.hashSync(password, salt);
 
-            // Handle profile picture upload
-            const profilePicUrl = req.file ? req.file.path : '';
+            
 
             // Create new user
-            const newUser = new User({ name, email, password: hashedPassword, mobile, profilePic: profilePicUrl });
+            const newUser = new User({ name, email, password: hashedPassword, mobile, profilePic: uploadResult.url });
             await newUser.save();
 
             const id = newUser._id.toString();
@@ -41,8 +48,8 @@ export const userCreate = async (req, res, next) => {
             const token = generateToken(id, email, role);
 
             res.cookie("token", token);
-            return res.status(201).json({ success: true, message: "User created successfully", data: newUser });
-        });
+            return res.status(201).json({ success: true, message: "User created successfully" });
+        
     } catch (error) {
         return res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
     }

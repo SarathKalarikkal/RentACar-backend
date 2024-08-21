@@ -12,7 +12,7 @@ import { generateToken } from "../utils/generateToken.js";
 
 export const getAllUsers = async (req, res, next) => {
     try {
-        const users = await User.find();
+        const users = await User.find().select('-password');
         res.json({ success: true, message: "Users fetched successfully", data: users });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || "Internal server error" });
@@ -39,7 +39,7 @@ export const deleteUser = async (req, res, next) => {
 // Get all dealers
 export const getAllDealers = async (req, res, next) => {
     try {
-        const dealers = await Dealer.find();
+        const dealers = await Dealer.find().select('-password');
         res.json({ success: true, message: "Dealers fetched successfully", data: dealers });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || "Internal server error" });
