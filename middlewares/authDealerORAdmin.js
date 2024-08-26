@@ -1,5 +1,6 @@
 export const authDealerOrAdmin = (req, res, next) => {
-    if (req.user.role === 'dealer' || req.user.role === 'admin') {
+    console.log("asdfasdsa",req.user)
+    if (req.user === 'dealer' || req.user === 'admin') {
         next();
     } else {
         return res.status(403).json({ success: false, message: "Not authorized" });

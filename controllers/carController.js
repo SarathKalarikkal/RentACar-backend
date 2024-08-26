@@ -134,15 +134,17 @@ export const updateCar = async (req, res, next) => {
 
         const {
             name, images, description, make, model, fuelType,
-            transmission, color, seating, mileage, review, bookedTimeSlots, rentPerHour, dealer
+            transmission, color, seating, mileage, reviews, bookedTimeSlots, rentPerHour, dealer
         } = req.body;
 
         // Check if a car with the same name and dealer already exists (excluding current car)
-        if (name && dealer) {
-            const dealerDetail = await Dealer.findOne({ name: dealer });
+        if (name && dealer && dealer._id) {
+            const dealerDetail = await Dealer.findById(dealer._id);
+            
             if (!dealerDetail) {
                 return res.status(404).json({ success: false, message: "Dealer not found" });
             }
+
             const carExists = await Car.findOne({ name, dealer: dealerDetail._id, _id: { $ne: id } });
             if (carExists) {
                 return res.status(409).json({ success: false, message: "Another car with the same name and dealer already exists" });
@@ -153,8 +155,8 @@ export const updateCar = async (req, res, next) => {
             id,
             {
                 name, images, description, make, model, fuelType,
-                transmission, color, seating, mileage, review, bookedTimeSlots, rentPerHour,
-                dealer: dealer ? dealerDetail._id : car.dealer 
+                transmission, color, seating, mileage, reviews, bookedTimeSlots, rentPerHour,
+                dealer: dealer ? dealer._id : car.dealer 
             },
             { new: true }
         )
@@ -177,6 +179,7 @@ export const updateCar = async (req, res, next) => {
         res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
     }
 };
+
 
 
 //Delete a car

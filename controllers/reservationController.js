@@ -64,8 +64,8 @@ export const createReservation = async(req, res, next) => {
 export const approveReservation  = async(req, res, next)=>{
    try {
       
-      const {reservationId} =  req.params
-      const reservation = await Reservation.findById(reservationId)
+      const {id} =  req.params
+      const reservation = await Reservation.findById(id)
 
       if (!reservation) {
          return res.status(404).json({ success: false, message: "Reservation not found" });
@@ -86,7 +86,30 @@ export const approveReservation  = async(req, res, next)=>{
    }
 }
 
+export const rejectReservation = async(req, res, next)=>{
+   try {
+      const {id} =  req.params
+      const reservation = await Reservation.findById(id)
 
+      if (!reservation) {
+         return res.status(404).json({ success: false, message: "Reservation not found" });
+     }
+
+     if (reservation.status !== 'pending') {
+      return res.status(400).json({ success: false, message: "Only pending reservations can be rejected" });
+     }
+
+      reservation.status = 'rejected'
+      reservation.updatedAt = Date.now()
+      await reservation.save()
+ 
+      res.json({ success: true, message: "Reservation approved", data: reservation });
+
+  
+   } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+   }
+}
 
 // getPendingReservations 
 
@@ -134,34 +157,42 @@ export const getUserReservation = async(req, res, next)=>{
 }
 
 //update Reservation
-export const updateReservation =async(req, res, next)=>{
+
+export const updateReservation = async (req, res, next) => {
    try {
+       const { id } = req.params; 
+       const { startDate, endDate } = req.body;
 
-      const {reservationId} = req.params
-      const {startDate, endDate} = req.body
+       // Convert the string dates to Date objects
+       const parsedStartDate = new Date(startDate.split('-').reverse().join('-'));
+       const parsedEndDate = new Date(endDate.split('-').reverse().join('-'));
 
-      const reservation = await Reservation.findById(reservationId)
+       const reservation = await Reservation.findById(id);
 
-      if (!reservation) {
-         return res.status(404).json({ success: false, message: "Reservation not found" });
-     }
+       if (!reservation) {
+           return res.status(404).json({ success: false, message: "Reservation not found" });
+       }
 
-     if (reservation.status !== 'pending') {
-      return res.status(400).json({ success: false, message: "Cannot update a reservation that is not pending" });
-  }
+       if (reservation.status !== 'pending') {
+           return res.status(400).json({ success: false, message: "Cannot update a reservation that is not pending" });
+       }
 
-        reservation.startDate = startDate;
-        reservation.endDate = endDate;
-        reservation.updatedAt = Date.now();
+       // Update the reservation details
+       reservation.startDate = parsedStartDate;
+       reservation.endDate = parsedEndDate;
+       reservation.updatedAt = Date.now();
 
-        await reservation.save();
+       await reservation.save();
 
-        res.json({ success: true, message: "Reservation updated successfully", data: reservation });
-      
+       res.json({ success: true, message: "Reservation updated successfully", data: reservation });
    } catch (error) {
-      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+       console.error("Error updating reservation:", error.message);
+       res.status(500).json({ success: false, message: error.message || "Internal server error" });
    }
-}
+};
+
+
+
 
 
 // Cancel a reservation
