@@ -1,6 +1,7 @@
 import { Dealer } from "../models/dealerModel.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/generateToken.js";
+import {Car} from "../models/carModel.js"
 
 // Create Dealer
 export const createDealer = async (req, res, next) => {
@@ -163,6 +164,28 @@ export const getAllDealers = async(req, res, next) => {
     try {
         const dealers = await Dealer.find();
         res.status(200).json({ success: true, message: "Successfully fetched all dealers", data: dealers });
+    } catch (error) {
+        res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
+    }
+}
+
+
+export const getDealerInventory = async(req, res, next)=>{
+    try {
+
+        console.log("dealerssssss",req.user)
+        const {id} = req.user.id
+        const cars = await Car.find({ dealer: id })
+        .populate('dealer', 'name location phone email') 
+        .populate('reviews', 'user rating comment') 
+        .exec();
+
+        if (!cars || cars.length === 0) {
+            return res.status(404).json({ success: false, message: "No cars found for this dealer" });
+        }
+
+        res.json({ success: true, data: cars });
+
     } catch (error) {
         res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
     }

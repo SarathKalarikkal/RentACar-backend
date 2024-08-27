@@ -10,70 +10,73 @@ export const createCar = async (req, res, next) => {
     try {
         const {
             name, description, make, model, fuelType,
-            transmission, color, seating, mileage, reviews, dealer, 
+            transmission, color, seating, mileage, reviews, 
             bookedTimeSlots, rentPerHour
         } = req.body;
 
-        //  console.log("===", req.files);
-           // Upload an image
-           let images =[]
-           let uploadResult;
-           if (req.files && req.files.length > 0) {
+        let images = [];
+        let uploadResult;
+
+        // Upload images to Cloudinary
+        if (req.files && req.files.length > 0) {
             try {
-                 uploadResult = await Promise.all(
+                uploadResult = await Promise.all(
                     req.files.map(async (file) => {
                         const result = await cloudinaryInstance.uploader.upload(file.path);
-                        return result.secure_url; // Cloudinary returns the uploaded image's URL
+                        return result.secure_url;
                     })
                 );
-        
-                // Push the upload results to the images array
+
+                // Push the uploaded image URLs to the images array
                 uploadResult.forEach((url) => images.push(url));
-                
-        
+
             } catch (error) {
                 console.error("Error uploading images:", error);
                 return res.status(500).json({ success: false, message: "Image upload failed" });
             }
         }
 
-         
-    
         // Validate mandatory fields
         if (!name  || !description || !make || !model || !fuelType || 
-            !transmission || !color || !seating || !mileage || !rentPerHour || !dealer) {
+            !transmission || !color || !seating || !mileage || !rentPerHour) {
             return res.status(400).json({ success: false, message: "All fields are mandatory" });
         }
-    
-        // Validate dealer
-        const dealerDetail = await Dealer.findOne({ name: dealer });
+
+        // Find the dealer by authenticated user ID
+        const dealerDetail = await Dealer.findById(req.user.id);
         if (!dealerDetail) {
             return res.status(404).json({ success: false, message: "Dealer not found" });
         }
-    
-        // Check if car already exists
-        const carExists = await Car.findOne({ name, dealer: dealerDetail._id });
-        if (carExists) {
-            return res.status(409).json({ success: false, message: "Car already exists" });
-        }
+
+        // Check if the dealer already created a car with the same name
+        const carExists = await Car.findOne({ name: name, dealer: dealerDetail._id });
 
        
-     
+        
+        if (carExists) {
+            return res.status(409).json({ success: false, message: "You have already created a car with this name" });
+        }
+
         // Create new car
         const newCar = new Car({
-            name,images:uploadResult, description, make, model, fuelType,
+            name, images: uploadResult, description, make, model, fuelType,
             transmission, color, seating, mileage, reviews, dealer: dealerDetail._id,
             bookedTimeSlots, rentPerHour
         });
 
         await newCar.save();
 
-        res.status(201).json({ success: true, message: "Car created successfully", data: newCar});
+        // Add the new car to the dealer's profile
+        dealerDetail.cars.push(newCar._id);
+        await dealerDetail.save();
+
+        res.status(201).json({ success: true, message: "Car created successfully", data: newCar });
     } catch (error) {
         console.error("Error creating car:", error.message);
         res.status(500).json({ success: false, message: error.message || "Internal server error" });
     }
 };
+
 
 export const getACar = async (req, res, next) => {
     try {

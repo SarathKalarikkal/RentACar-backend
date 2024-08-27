@@ -6,7 +6,7 @@ import {Car} from "../models/carModel.js"
 export const createReservation = async(req, res, next) => {
    try {
       const { carId, startDate, endDate, totalPrice } = req.body;
-      const userId = req.user._id;
+      const userId = req.user.id;
 
       // Convert date from DD-MM-YYYY to YYYY-MM-DD
       const formatDate = (dateString) => {
@@ -236,7 +236,7 @@ export const getUserReservations = async (req, res) => {
        
 
        // Fetch reservations associated with the user
-       const reservations = await Reservation.find({ user: userId }).populate('car', 'make model');
+       const reservations = await Reservation.find({ user: userId }).populate('car', 'make model images');
 
        if (!reservations.length) {
            return res.status(404).json({ success: false, message: "No reservations found for this user" });
