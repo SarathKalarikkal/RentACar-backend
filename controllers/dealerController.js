@@ -68,6 +68,7 @@ export const dealerLogin = async(req, res, next) => {
         }
 
         const dealerExist = await Dealer.findOne({ email });
+
         if (!dealerExist) {
             return res.status(404).json({ success: false, message: "Dealer does not exist" });
         }
@@ -83,8 +84,13 @@ export const dealerLogin = async(req, res, next) => {
         // Create token
         const token = generateToken(id, email, role);
 
-        res.cookie("token", token);
-        res.status(200).json({ success: true, message: "Dealer logged in successfully" });
+        res.cookie("token", token, {
+            sameSite: "None",
+            secure: true,
+            httpOnly: true,
+        });
+        console.log(token)
+        res.status(200).json({ success: true, message: "Dealer logged in successfully", role:dealerExist.role, userData:dealerExist, token : token });
     } catch (error) {
         res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
     }
@@ -94,6 +100,7 @@ export const dealerLogin = async(req, res, next) => {
 export const dealerLogout = async(req, res, next) => {
     try {
         res.clearCookie("token");
+        console.log(token)
         res.status(200).json({ success: true, message: "Dealer logged out successfully" });
     } catch (error) {
         res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
@@ -173,8 +180,10 @@ export const getAllDealers = async(req, res, next) => {
 export const getDealerInventory = async(req, res, next)=>{
     try {
 
+       
+        const id = req.user.id
         console.log("dealerssssss",req.user)
-        const {id} = req.user.id
+
         const cars = await Car.find({ dealer: id })
         .populate('dealer', 'name location phone email') 
         .populate('reviews', 'user rating comment') 

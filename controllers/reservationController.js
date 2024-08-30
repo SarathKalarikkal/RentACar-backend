@@ -234,7 +234,6 @@ export const getUserReservations = async (req, res) => {
        const userId = req.user.id;
 
        
-
        // Fetch reservations associated with the user
        const reservations = await Reservation.find({ user: userId }).populate('car', 'make model images');
 
@@ -248,3 +247,24 @@ export const getUserReservations = async (req, res) => {
        res.status(500).json({ success: false, message: error.message || "Internal server error" });
    }
 };
+
+
+export const getDealerCarReservation =async(req, res, next)=>{
+   try {
+
+      const dealerId = req.user.id
+
+      const dealerCars = await Car.find({dealer : dealerId}).select('_id')
+
+      const reservations = await Reservation.find({car : {$in : dealerCars}})
+      .populate('car', 'make model images')
+      .populate('user' , 'name email')
+
+
+      res.status(200).json({success : true, message : "Reservations fetched successfully", data : reservations})
+
+   } catch (error) {
+      console.error("Error fetching dealer reservations:", error.message);
+      res.status(500).json({ success: false, message: "Internal server error" });
+   }
+}

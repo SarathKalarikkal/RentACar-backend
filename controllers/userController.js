@@ -82,8 +82,12 @@ export const userLogin = async (req, res, next) => {
         // Create token
         const token = generateToken(id, email, role);
 
-        res.cookie("token", token);
-        return res.status(200).json({ success: true, message: "User logged in successfully" });
+        res.cookie("token", token, {
+            sameSite: "None",
+            secure: true,
+            httpOnly: true,
+        });
+        return res.status(200).json({ success: true, message: "User logged in successfully",role:userExist.role, userData:userExist, token:token });
 
     } catch (error) {
         return res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });

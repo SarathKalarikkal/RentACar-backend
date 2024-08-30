@@ -19,7 +19,7 @@ export const authDealer = (req, res, next) => {
         if (tokenVerified.role !== "dealer" && tokenVerified.role !== "admin") {
             return res.status(403).json({ message: "user not authenticated not dealer or admin" });
         }
-
+        
         req.user = tokenVerified;
        
         

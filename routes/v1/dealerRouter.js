@@ -14,6 +14,6 @@ router.get('/profile/:id', authDealer, dealerProfile);
 router.get('/check-dealer', authDealer, checkDealer);
 router.put('/update/:id', authDealer, dealerUpdate);
 
-router.get('/inventory', authDealer, getDealerInventory);
+router.get('/inventory',authDealer, getDealerInventory);
 
 export default router
