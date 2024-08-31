@@ -217,9 +217,13 @@ export const adminLogin = async (req, res, next)=>{
          // Create token
          const token = generateToken(id, email, role);
 
-         res.cookie("token", token);
+         res.cookie("token", token, {
+            sameSite: "None",
+            secure: true,
+            httpOnly: true,
+        });
 
-         res.status(200).json({ success: true, message: "Admin logged in successfully" });
+         res.status(200).json({ success: true, message: "Admin logged in successfully", token : token,role:adminExist.role, userData:adminExist});
 
 
    } catch (error) {

@@ -24,7 +24,7 @@ const reservationSchema = new mongoose.Schema({
     enum: ['pending', 'confirmed', 'cancelled','rejected', 'completed'],
     default: 'pending'
   },
-  totalPrice: {
+  rentPerHour: {
     type: Number,
     required: true
   },

@@ -3,20 +3,14 @@ import {Car} from "../models/carModel.js"
 
 
 //create reservation
-export const createReservation = async(req, res, next) => {
+export const createReservation = async (req, res, next) => {
    try {
-      const { carId, startDate, endDate, totalPrice } = req.body;
+      const { carId, startDate, endDate, rentPerHour } = req.body;
       const userId = req.user.id;
 
-      // Convert date from DD-MM-YYYY to YYYY-MM-DD
-      const formatDate = (dateString) => {
-         const [day, month, year] = dateString.split('-');
-         return new Date(`${year}-${month}-${day}`);
-      };
-
-      // Validate and convert dates
-      const start = formatDate(startDate);
-      const end = formatDate(endDate);
+      // Ensure that the input dates are in YYYY-MM-DD format
+      const start = new Date(startDate);
+      const end = new Date(endDate);
 
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
          return res.status(400).json({ success: false, message: "Invalid date format" });
@@ -26,7 +20,7 @@ export const createReservation = async(req, res, next) => {
          return res.status(400).json({ success: false, message: "Start date must be before end date" });
       }
 
-      if (!startDate || !endDate || !totalPrice) {
+      if (!startDate || !endDate || !rentPerHour) {
          return res.status(400).json({ success: false, message: "All fields are required" });
       }
 
@@ -36,18 +30,20 @@ export const createReservation = async(req, res, next) => {
       if (!car) {
          return res.status(404).json({ success: false, message: "Car not found" });
       }
-       const existReservation = await Reservation.findOne({car : carId})
+      
+      const existReservation = await Reservation.findOne({ car: carId, startDate: { $lt: end }, endDate: { $gt: start } });
+      
+      if (existReservation) {
+         return res.status(404).json({ success: false, message: "Car already reserved for this period" });
+      }
 
-       if(existReservation){
-         return res.status(404).json({ success: false, message: "Car already reserved" });
-       }
       // Create a new reservation with status pending
       const reservation = new Reservation({
          car: carId,
          user: userId,
          startDate: start,
          endDate: end,
-         totalPrice,
+         rentPerHour,
       });
       await reservation.save();
 
@@ -57,6 +53,7 @@ export const createReservation = async(req, res, next) => {
       res.status(500).json({ success: false, message: error.message || "Internal server error" });
    }
 }
+
 
 
 
@@ -200,9 +197,9 @@ export const updateReservation = async (req, res, next) => {
 export const cancelReservation = async (req, res,next)=>{
    try {
       
-     const {reservationId} = req.params
+     const {id} = req.params
 
-     const reservation = await Reservation.findById(reservationId);
+     const reservation = await Reservation.findById(id);
 
      if (!reservation) {
       return res.status(404).json({ success: false, message: "Reservation not found" });

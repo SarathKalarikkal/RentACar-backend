@@ -8,7 +8,7 @@ const router = express.Router()
 
 router.post('/create',upload.single('image'), createDealer);
 router.post('/login', dealerLogin);
-router.get('/logout', authDealer, dealerLogout);
+router.get('/logout', dealerLogout);
 router.get('/list', getAllDealers);
 router.get('/profile/:id', authDealer, dealerProfile);
 router.get('/check-dealer', authDealer, checkDealer);
