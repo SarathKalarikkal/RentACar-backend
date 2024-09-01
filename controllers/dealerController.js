@@ -6,14 +6,14 @@ import {Car} from "../models/carModel.js"
 // Create Dealer
 export const createDealer = async (req, res, next) => {
     try {
-        const { name, email, phone, role, password, cars, location } = req.body;
+        const { name, email, phone, role, password, cars } = req.body;
 
         const uploadResult = await cloudinaryInstance.uploader.upload(req.file.path).catch((error)=>{
             console.log(error);
             
         })
 
-        if (!name || !email || !password || !role || !phone || !location) {
+        if (!name || !email || !password || !role || !phone ) {
             return res.status(400).json({ success: false, message: "All fields are required" });
         }
 
@@ -41,7 +41,7 @@ export const createDealer = async (req, res, next) => {
             profilePic: uploadResult.url,
             cars,
             phone,
-            location
+
         });
 
         await newDealer.save();

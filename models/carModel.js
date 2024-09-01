@@ -19,7 +19,7 @@ const carSchema = new mongoose.Schema(
             required: true
         },
         model: {
-            type: String,
+            type: Number,
             required: true
         },
         fuelType: {
@@ -34,12 +34,20 @@ const carSchema = new mongoose.Schema(
             type: String,
             required: true
         },
+        location: {
+            type: String,
+            required: true
+        },
         seating: {
             type: Number,  
             required: true
         },
         mileage: {
             type: Number, 
+            required: true
+        },
+        type: {
+            type: String, 
             required: true
         },
         reviews: [{ 

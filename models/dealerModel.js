@@ -16,10 +16,6 @@ const dealerSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
-        location :{
-            type: String,
-            required: true,
-        },
         role: {
             type: String,
             enum: ["dealer", "admin"],

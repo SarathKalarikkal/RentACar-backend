@@ -9,9 +9,9 @@ import { Dealer } from "../models/dealerModel.js";
 export const createCar = async (req, res, next) => {
     try {
         const {
-            name, description, make, model, fuelType,
+            name, description, make, model, fuelType,type,
             transmission, color, seating, mileage, reviews, 
-            bookedTimeSlots, rentPerHour
+            bookedTimeSlots, rentPerHour, location
         } = req.body;
 
         let images = [];
@@ -37,8 +37,8 @@ export const createCar = async (req, res, next) => {
         }
 
         // Validate mandatory fields
-        if (!name  || !description || !make || !model || !fuelType || 
-            !transmission || !color || !seating || !mileage || !rentPerHour) {
+        if (!name  || !description || !make  || !model || !fuelType || 
+            !transmission || !color || !seating || !mileage || !rentPerHour || !type || !location) {
             return res.status(400).json({ success: false, message: "All fields are mandatory" });
         }
 
@@ -61,7 +61,7 @@ export const createCar = async (req, res, next) => {
         const newCar = new Car({
             name, images: uploadResult, description, make, model, fuelType,
             transmission, color, seating, mileage, reviews, dealer: dealerDetail._id,
-            bookedTimeSlots, rentPerHour
+            bookedTimeSlots, rentPerHour, type, location
         });
 
         await newCar.save();
@@ -129,37 +129,41 @@ export const updateCar = async (req, res, next) => {
     try {
         const { id } = req.params;
 
+        // Find the car by ID
         const car = await Car.findById(id);
 
         if (!car) {
             return res.status(404).json({ success: false, message: "Car not found" });
         }
 
+        // Handle file uploads
+        const imageFiles = req.files ? req.files.map(file => file.path) : [];
+
+        // Extract other fields from the request body
         const {
-            name, images, description, make, model, fuelType,
+            name, description, make, model, fuelType,
             transmission, color, seating, mileage, reviews, bookedTimeSlots, rentPerHour, dealer
         } = req.body;
 
         // Check if a car with the same name and dealer already exists (excluding current car)
         if (name && dealer && dealer._id) {
             const dealerDetail = await Dealer.findById(dealer._id);
-            
             if (!dealerDetail) {
                 return res.status(404).json({ success: false, message: "Dealer not found" });
             }
-
             const carExists = await Car.findOne({ name, dealer: dealerDetail._id, _id: { $ne: id } });
             if (carExists) {
                 return res.status(409).json({ success: false, message: "Another car with the same name and dealer already exists" });
             }
         }
 
+        // Update the car with new data
         const updatedCar = await Car.findByIdAndUpdate(
             id,
             {
-                name, images, description, make, model, fuelType,
+                name, images: imageFiles, description, make, model, fuelType,
                 transmission, color, seating, mileage, reviews, bookedTimeSlots, rentPerHour,
-                dealer: dealer ? dealer._id : car.dealer 
+                dealer: dealer ? dealer._id : car.dealer
             },
             { new: true }
         )
@@ -182,6 +186,8 @@ export const updateCar = async (req, res, next) => {
         res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
     }
 };
+
+
 
 
 
