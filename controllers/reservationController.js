@@ -208,11 +208,13 @@ export const cancelReservation = async (req, res,next)=>{
   if(reservation.status === 'completed'){
    return res.status(400).json({ success: false, message: "Cannot cancel a completed reservation" });
   }
+ 
+  await Reservation.findByIdAndDelete(id)
 
-  reservation.status = 'cancelled';
-  reservation.updatedAt = Date.now();
+//   reservation.status = 'cancelled';
+//   reservation.updatedAt = Date.now();
 
-  await reservation.save();
+//   await reservation.save();
     
   res.json({ success: true, message: "Reservation canceled successfully", data: reservation });
 
