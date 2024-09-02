@@ -8,19 +8,19 @@ import { cloudinaryInstance } from "../config/cloudinaryConfig.js";
 export const userCreate = async (req, res, next) => {
     try {
 
-            const { name, email, password, mobile } = req.body;
+            const { name, email, password, role } = req.body;
 
             // console.log(req.file);
             
 
-            const uploadResult = await cloudinaryInstance.uploader.upload(req.file.path).catch((error)=>{
-                console.log(error);
+            // const uploadResult = await cloudinaryInstance.uploader.upload(req.file.path).catch((error)=>{
+            //     console.log(error);
                 
-            })
+            // })
             // console.log(uploadResult.url)
 
 
-            if (!name || !email || !password || !mobile) {
+            if (!name || !email || !password || !role ) {
                 return res.status(400).json({ success: false, message: "All fields are required" });
             }
 
@@ -38,17 +38,18 @@ export const userCreate = async (req, res, next) => {
             
 
             // Create new user
-            const newUser = new User({ name, email, password: hashedPassword, mobile, profilePic: uploadResult.url });
+            // const newUser = new User({ name, email, password: hashedPassword, mobile, profilePic: uploadResult.url });
+            const newUser = new User({ name, email, password: hashedPassword });
             await newUser.save();
 
             const id = newUser._id.toString();
-            const role = newUser.role;
+            const UserRole = newUser.role;
 
             // Create token
-            const token = generateToken(id, email, role);
+            const token = generateToken(id, email, UserRole);
 
             res.cookie("token", token);
-            return res.status(201).json({ success: true, message: "User created successfully" });
+            return res.status(201).json({ success: true, message: "User created successfully", userData : newUser,token:token });
         
     } catch (error) {
         return res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });

@@ -8,10 +8,10 @@ export const createDealer = async (req, res, next) => {
     try {
         const { name, email, phone, role, password, cars } = req.body;
 
-        const uploadResult = await cloudinaryInstance.uploader.upload(req.file.path).catch((error)=>{
-            console.log(error);
+        // const uploadResult = await cloudinaryInstance.uploader.upload(req.file.path).catch((error)=>{
+        //     console.log(error);
             
-        })
+        // })
 
         if (!name || !email || !password || !role || !phone ) {
             return res.status(400).json({ success: false, message: "All fields are required" });
@@ -33,15 +33,23 @@ export const createDealer = async (req, res, next) => {
         }
 
         // Create new dealer
+        // const newDealer = new Dealer({
+        //     name,
+        //     email,
+        //     password: hashedPassword,
+        //     role,
+        //     profilePic: uploadResult.url,
+        //     cars,
+        //     phone,
+
+        // });
+        // Create new dealer
         const newDealer = new Dealer({
             name,
             email,
             password: hashedPassword,
             role,
-            profilePic: uploadResult.url,
-            cars,
-            phone,
-
+            phone
         });
 
         await newDealer.save();
@@ -52,7 +60,7 @@ export const createDealer = async (req, res, next) => {
         const token = generateToken(id, email, role);
 
         res.cookie("token", token);
-        res.status(201).json({ success: true, message: "Dealer created successfully", data: newDealer });
+        res.status(201).json({ success: true, message: "Dealer created successfully", userData: newDealer, token:token });
     } catch (error) {
         res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
     }
