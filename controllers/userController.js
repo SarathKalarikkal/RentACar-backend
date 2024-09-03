@@ -163,6 +163,29 @@ export const getUserNotifications = async (req, res) => {
   };
   
 
+  export const deleteUserNotification = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id; // Assuming you have dealer authentication in place
+
+        // Find the notification by ID and ensure it belongs to the authenticated dealer
+        const notification = await Notification.findOne({ _id: id, user: userId });
+
+        if (!notification) {
+            return res.status(404).json({ success: false, message: "Notification not found or not authorized" });
+        }
+
+        // Delete the notification
+        await notification.deleteOne();
+
+        res.status(200).json({ success: true, message: "Notification deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting notification:", error.message);
+        res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
+
+
 
 
 

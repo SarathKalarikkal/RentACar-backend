@@ -89,13 +89,22 @@ export const approveReservation  = async(req, res, next)=>{
      reservation.status = 'confirmed'
      reservation.updatedAt = Date.now()
      await reservation.save()
+ 
 
+      // Fetch the car details
+      const car = await Car.findById(reservation.car);
+
+      if (!car) {
+         return res.status(404).json({ success: false, message: "Car not found" });
+      }
+
+     console.log("reservation",reservation, car)
 
      const userNotification = new Notification({
       user: reservation.user._id,
-      reservation: reservation._id,
-      message: `Your reservation for ${reservation.car.name} has been approved.`,
-    });
+      message: `Your reservation for ${car.name} has been approved.`,
+   });
+
     await userNotification.save();
 
      res.json({ success: true, message: "Reservation approved", data: reservation });
@@ -122,11 +131,18 @@ export const rejectReservation = async(req, res, next)=>{
       reservation.updatedAt = Date.now()
       await reservation.save()
 
-      const userNotification = new Notification({
-         user: reservation.user._id,
+      
+      // Fetch the car details
+      const car = await Car.findById(reservation.car);
+
+      if (!car) {
+         return res.status(404).json({ success: false, message: "Car not found" });
+      }
+
+       const userNotification = new Notification({
          reservation: reservation._id,
-         message: `Your reservation for ${reservation.car.name} has been rejected.`,
-       });
+         message: `Your reservation for ${car.name} has been rejected.`,
+      });
    
        await userNotification.save();
  
