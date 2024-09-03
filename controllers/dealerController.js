@@ -2,6 +2,9 @@ import { Dealer } from "../models/dealerModel.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/generateToken.js";
 import {Car} from "../models/carModel.js"
+import { Notification } from "../models/notificatioModel.js";
+
+
 
 // Create Dealer
 export const createDealer = async (req, res, next) => {
@@ -207,3 +210,38 @@ export const getDealerInventory = async(req, res, next)=>{
         res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
     }
 }
+
+export const getDealerNotifications = async (req, res) => {
+    try {
+      const dealerId = req.user.id; 
+      console.log(dealerId)
+      const notifications = await Notification.find({ dealer: dealerId }).sort({ createdAt: -1 }).populate('reservedby', 'name email');
+      res.json({ success: true, data: notifications });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+  };
+  
+
+  export const deleteDealerNotification = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const dealerId = req.user.id; // Assuming you have dealer authentication in place
+
+        // Find the notification by ID and ensure it belongs to the authenticated dealer
+        const notification = await Notification.findOne({ _id: id, dealer: dealerId });
+
+        if (!notification) {
+            return res.status(404).json({ success: false, message: "Notification not found or not authorized" });
+        }
+
+        // Delete the notification
+        await notification.deleteOne();
+
+        res.status(200).json({ success: true, message: "Notification deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting notification:", error.message);
+        res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
+

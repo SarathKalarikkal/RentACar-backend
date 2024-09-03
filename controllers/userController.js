@@ -2,6 +2,9 @@ import { User } from "../models/userModel.js";
 import bcrypt from 'bcrypt'
 import { generateToken } from "../utils/generateToken.js";
 import { cloudinaryInstance } from "../config/cloudinaryConfig.js";
+import { Notification } from "../models/notificatioModel.js";
+
+
 
 
 // Create User
@@ -147,3 +150,19 @@ export const getAllUsers = async(req, res, next)=>{
         return res.status(error.status || 500).json({ message: error.message || "Internal server error" });
      }
 }
+
+
+export const getUserNotifications = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 });
+      res.json({ success: true, data: notifications });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+    }
+  };
+  
+
+
+
+

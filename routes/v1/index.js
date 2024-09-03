@@ -6,7 +6,7 @@ import reservationRouter from "./reservationRouter.js"
 import reviewRouter from "./reviewRouter.js"
 import adminRouter from "./adminRouter.js"
 import messageRouter from "./messageRouter.js"
-import notificationRouter from "./notificationRouter.js"
+
 
 
 const v1Router = express.Router()
@@ -18,7 +18,7 @@ v1Router.use('/reservation', reservationRouter)
 v1Router.use('/review', reviewRouter)
 v1Router.use('/admin', adminRouter)
 v1Router.use('/message', messageRouter)
-v1Router.use('/notification', notificationRouter)
+
 
 // v1Router.use('/payment', reservationRouter)
 

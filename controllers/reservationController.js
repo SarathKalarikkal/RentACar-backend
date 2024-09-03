@@ -1,5 +1,8 @@
 import { Reservation } from "../models/reservationModel.js";
 import {Car} from "../models/carModel.js"
+import { Notification } from "../models/notificatioModel.js";
+import { User } from "../models/userModel.js";
+
 
 
 //create reservation
@@ -47,6 +50,17 @@ export const createReservation = async (req, res, next) => {
       });
       await reservation.save();
 
+
+
+      const dealerNotification = new Notification({
+         reservedby:userId,
+         dealer: car.dealer,
+         reservation: reservation._id,
+         message: `You have a new reservation request for ${car.name}.`,
+       });
+   
+       await dealerNotification.save();
+
       res.status(201).json({ success: true, message: "Reservation created, awaiting approval", data: reservation });
 
    } catch (error) {
@@ -76,6 +90,14 @@ export const approveReservation  = async(req, res, next)=>{
      reservation.updatedAt = Date.now()
      await reservation.save()
 
+
+     const userNotification = new Notification({
+      user: reservation.user._id,
+      reservation: reservation._id,
+      message: `Your reservation for ${reservation.car.name} has been approved.`,
+    });
+    await userNotification.save();
+
      res.json({ success: true, message: "Reservation approved", data: reservation });
 
    } catch (error) {
@@ -99,6 +121,14 @@ export const rejectReservation = async(req, res, next)=>{
       reservation.status = 'rejected'
       reservation.updatedAt = Date.now()
       await reservation.save()
+
+      const userNotification = new Notification({
+         user: reservation.user._id,
+         reservation: reservation._id,
+         message: `Your reservation for ${reservation.car.name} has been rejected.`,
+       });
+   
+       await userNotification.save();
  
       res.json({ success: true, message: "Reservation approved", data: reservation });
 
@@ -157,12 +187,17 @@ export const getUserReservation = async(req, res, next)=>{
 
 export const updateReservation = async (req, res, next) => {
    try {
-       const { id } = req.params; 
+       const { id } = req.params;
        const { startDate, endDate } = req.body;
 
-       // Convert the string dates to Date objects
-       const parsedStartDate = new Date(startDate.split('-').reverse().join('-'));
-       const parsedEndDate = new Date(endDate.split('-').reverse().join('-'));
+       // Create Date objects directly from YYYY-MM-DD format
+       const parsedStartDate = new Date(startDate);
+       const parsedEndDate = new Date(endDate);
+
+       // Check if the dates are valid
+       if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
+           return res.status(400).json({ success: false, message: "Invalid date format" });
+       }
 
        const reservation = await Reservation.findById(id);
 
@@ -187,6 +222,7 @@ export const updateReservation = async (req, res, next) => {
        res.status(500).json({ success: false, message: error.message || "Internal server error" });
    }
 };
+
 
 
 

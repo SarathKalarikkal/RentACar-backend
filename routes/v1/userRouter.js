@@ -1,5 +1,5 @@
 import express from "express"
-import { checkUser, getAllUsers, userCreate, userLogin, userLogout, userProfile } from "../../controllers/userController.js"
+import { checkUser, getAllUsers, getUserNotifications, userCreate, userLogin, userLogout, userProfile } from "../../controllers/userController.js"
 import { authUser } from "../../middlewares/authUser.js"
 import { upload } from "../../middlewares/uploadMiddileware.js";
 
@@ -13,5 +13,7 @@ router.get('/logout', userLogout);
 router.get('/profile/:id', authUser, userProfile);
 router.get('/check-user', authUser, checkUser);
 router.get('/', authUser, getAllUsers);
+
+router.get('/notifications',authUser, getUserNotifications);
 
 export default router
