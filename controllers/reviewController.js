@@ -1,54 +1,55 @@
 import { Review } from "../models/reviewModel.js";
 import { Car } from "../models/carModel.js";
+import { User } from "../models/userModel.js";
 
 
-export const createReview = async(req, res, next)=>{
+export const createReview = async (req, res, next) => {
     try {
         const { rating, comment } = req.body;
-        const {carId} = req.params
-
+        const { carId } = req.params;
         const userId = req.user.id;
 
-        
         if (!userId) {
             return res.status(401).json({ success: false, message: "User not authenticated" });
-        }
-
-        if (!rating || typeof rating !== 'number' || rating < 1 || rating > 5) {
-            return res.status(400).json({ success: false, message: "Valid rating (1-5) is required" });
         }
 
         if (!comment) {
             return res.status(400).json({ success: false, message: "Comment is required" });
         }
          
-        const car = await Car.findById(carId)
+        const car = await Car.findById(carId);
 
         if (!car) {
             return res.status(404).json({ success: false, message: "Car not found" });
         }
-         // Check if the user has already reviewed this car
-        const existingReview = await Review.findOne({ car: carId, user: userId });
-         if (existingReview) {
-             return res.status(409).json({ success: false, message: "You have already reviewed this car" });
-         }
 
-        const newReview = await Review.create({
+        // Check if the user has already reviewed this car
+        const existingReview = await Review.findOne({ car: carId, user: userId });
+        if (existingReview) {
+            return res.status(409).json({ success: false, message: "You have already reviewed this car" });
+        }
+
+        // Fetch the user details to get the user's name
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const newReview = new Review({
             car: carId,
             user: userId,
+            userName: user.name, // Assuming the User model has a `name` field
             rating,
             comment
         });
 
-       
-       await newReview.save();
-       
+        await newReview.save();
 
-       car.reviews.push(newReview);
-       await car.save();
+        car.reviews.push(newReview._id);
+        await car.save(); // Save the car with the new review
 
-       res.status(201).json({ success: true, message: "Review created successfully", data: newReview, car});
-        
+        res.status(201).json({ success: true, message: "Review created successfully", data: newReview });
+
     } catch (error) {
         res.status(error.status || 500).json({ message: error.message || "Internal server error" });
     }

@@ -112,9 +112,33 @@ export const getACar = async (req, res, next) => {
 //Get all cars
 export const getCarsList = async (req, res, next) => {
     try {
-        const cars = await Car.find()
-            .populate('reviews')  
-            .populate('dealer', 'name email phone location') 
+        // Extract query parameters from the request
+        const { sort, type, transmission } = req.query;
+
+        // Build a query object for filtering
+        let query = {};
+
+        // Add filters based on query parameters
+        if (type) {
+            query.type = type.charAt(0).toUpperCase() + type.slice(1).toLowerCase(); // Ensure consistent casing
+        }
+        if (transmission) {
+            query.transmission = transmission.charAt(0).toUpperCase() + transmission.slice(1).toLowerCase();
+        }
+
+        // Build the sorting option
+        let sortOption = {};
+        if (sort === "lowToHigh") {
+            sortOption.price = 1; // Sort by price in ascending order
+        } else if (sort === "highToLow") {
+            sortOption.price = -1; // Sort by price in descending order
+        }
+
+        // Fetch cars with filtering and sorting
+        const cars = await Car.find(query)
+            .sort(sortOption)
+            .populate('reviews')
+            .populate('dealer', 'name email phone location')
             .exec();
 
         res.json({ success: true, message: "Fetched cars list successfully", data: cars });
@@ -123,6 +147,7 @@ export const getCarsList = async (req, res, next) => {
         res.status(500).json({ success: false, message: error.message || "Internal server error" });
     }
 };
+
 
 // Update a car
 export const updateCar = async (req, res, next) => {

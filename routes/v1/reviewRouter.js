@@ -10,7 +10,7 @@ const router = express.Router()
 router.post('/create/:carId', authUser, createReview);
 
 // Get all reviews for a specific car
-router.get('/car/:carId/reviews', getReviews);
+router.get('/car/:carId', getReviews);
 
 // Update a specific review
 router.put('/review/:reviewId', authUser, updateReview);

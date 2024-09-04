@@ -50,6 +50,11 @@ const carSchema = new mongoose.Schema(
             type: String, 
             required: true
         },
+        availableStatus: {
+            type: String, 
+            required: false,
+            default : "Available",
+        },
         reviews: [{ 
             type: mongoose.Schema.Types.ObjectId, 
             ref: "Review"

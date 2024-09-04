@@ -30,6 +30,8 @@ export const createReservation = async (req, res, next) => {
       console.log("carId", carId);
       const car = await Car.findById(carId);
 
+      
+
       if (!car) {
          return res.status(404).json({ success: false, message: "Car not found" });
       }
@@ -50,7 +52,9 @@ export const createReservation = async (req, res, next) => {
       });
       await reservation.save();
 
-
+// Update the car's availableStatus to "Not Available"
+car.availableStatus = "Not Available";
+await car.save();
 
       const dealerNotification = new Notification({
          reservedby:userId,
@@ -134,6 +138,8 @@ export const rejectReservation = async(req, res, next)=>{
       
       // Fetch the car details
       const car = await Car.findById(reservation.car);
+      car.availableStatus = "Available";
+      await car.save();
 
       if (!car) {
          return res.status(404).json({ success: false, message: "Car not found" });
@@ -240,43 +246,41 @@ export const updateReservation = async (req, res, next) => {
 };
 
 
-
-
-
-
 // Cancel a reservation
 
-export const cancelReservation = async (req, res,next)=>{
+export const cancelReservation = async (req, res, next) => {
    try {
-      
-     const {id} = req.params
-
-     const reservation = await Reservation.findById(id);
-
-     if (!reservation) {
-      return res.status(404).json({ success: false, message: "Reservation not found" });
-  }
-
-  if(reservation.status === 'completed'){
-   return res.status(400).json({ success: false, message: "Cannot cancel a completed reservation" });
-  }
+     const { id } = req.params;
  
-  await Reservation.findByIdAndDelete(id)
-
-//   reservation.status = 'cancelled';
-//   reservation.updatedAt = Date.now();
-
-//   await reservation.save();
-    
-  res.json({ success: true, message: "Reservation canceled successfully", data: reservation });
-
+     const reservation = await Reservation.findById(id);
+ 
+     if (!reservation) {
+       return res.status(404).json({ success: false, message: "Reservation not found" });
+     }
+ 
+     if (reservation.status === 'confirmed') {
+       return res.status(400).json({ success: false, message: "Cannot cancel a completed reservation" });
+     }
+ 
+     // Find the car associated with this reservation
+     const car = await Car.findById(reservation.car._id);
+ 
+     if (!car) {
+       return res.status(404).json({ success: false, message: "Car not found" });
+     }
+ 
+     // Delete the reservation
+     await Reservation.findByIdAndDelete(id);
+ 
+     // Update the car's availableStatus to "Available"
+     car.availableStatus = "Available";
+     await car.save();
+ 
+     res.json({ success: true, message: "Reservation canceled successfully", data: reservation });
    } catch (error) {
-      res.status(500).json({ success: false, message: error.message || "Internal server error" });
+     res.status(500).json({ success: false, message: error.message || "Internal server error" });
    }
-}
-
-
-
+ };
 
 
 
