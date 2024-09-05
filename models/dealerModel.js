@@ -21,6 +21,9 @@ const dealerSchema = new mongoose.Schema(
             enum: ["dealer", "admin"],
             default : "dealer"
         },
+        location:{
+            type: String,
+        },
         password: {
             type: String,
             required: true,

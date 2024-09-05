@@ -8,7 +8,7 @@ import { User } from "../models/userModel.js";
 //create reservation
 export const createReservation = async (req, res, next) => {
    try {
-      const { carId, startDate, endDate, rentPerHour } = req.body;
+      const { carId, startDate, endDate, rentPerHour,totalRate } = req.body;
       const userId = req.user.id;
 
       // Ensure that the input dates are in YYYY-MM-DD format
@@ -49,6 +49,7 @@ export const createReservation = async (req, res, next) => {
          startDate: start,
          endDate: end,
          rentPerHour,
+         totalRate
       });
       await reservation.save();
 

@@ -149,9 +149,9 @@ export const checkDealer = async(req, res, next) => {
 }
 
 // Dealer update
-export const dealerUpdate = async(req, res, next) => {
+export const dealerUpdate = async (req, res, next) => {
     try {
-        const { name, email, phone, role, password, cars, location } = req.body;
+        const { name, email, phone, location } = req.body;
         const { id } = req.params;
 
         const dealerExist = await Dealer.findById(id);
@@ -159,15 +159,16 @@ export const dealerUpdate = async(req, res, next) => {
             return res.status(404).json({ success: false, message: "Dealer not found" });
         }
 
-        const updateData = { name, email, phone, role, location };
-        if (password) {
-            const salt = 10;
-            updateData.password = bcrypt.hashSync(password, salt);
-        }
+        // Prepare update data while excluding fields that should not be changed
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (email) updateData.email = email;
+        if (phone) updateData.phone = phone;
+        if (location) updateData.location = location;
 
         const updatedDealer = await Dealer.findByIdAndUpdate(
             id,
-            { ...updateData, $push: { cars: cars } },
+            { ...updateData },
             { new: true }
         );
 
@@ -175,7 +176,8 @@ export const dealerUpdate = async(req, res, next) => {
     } catch (error) {
         res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
     }
-}
+};
+
 
 // Get all dealers
 export const getAllDealers = async(req, res, next) => {

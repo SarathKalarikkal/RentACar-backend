@@ -151,6 +151,36 @@ export const getAllUsers = async(req, res, next)=>{
      }
 }
 
+export const userUpdate = async (req, res, next) => {
+    try {
+        const { name, email, phone, location } = req.body;
+        const { id } = req.params;
+
+        // Find the user by ID
+        const userExist = await User.findById(id);
+        if (!userExist) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Prepare update data while excluding fields that should not be changed
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (email) updateData.email = email;
+        if (phone) updateData.phone = phone;
+        if (location) updateData.location = location;
+
+        // Update the user and return the updated data
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            { ...updateData },
+            { new: true }
+        );
+
+        res.status(200).json({ success: true, message: "User updated successfully", data: updatedUser });
+    } catch (error) {
+        res.status(error.status || 500).json({ success: false, message: error.message || "Internal server error" });
+    }
+};
 
 export const getUserNotifications = async (req, res) => {
     try {
