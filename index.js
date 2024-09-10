@@ -29,7 +29,7 @@ app.use('/uploads', express.static(uploadDir));
 
 // Middleware setup
 app.use(cors({
-    origin: 'https://rent-a-car-beta.vercel.app/' || "http://localhost:5173",
+    origin: 'https://rent-a-car-beta.vercel.app' || "http://localhost:5173",
     credentials: true
 }));
 app.use(bodyParser.urlencoded({ extended: false }));
