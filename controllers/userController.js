@@ -1,8 +1,9 @@
 import { User } from "../models/userModel.js";
 import bcrypt from 'bcrypt'
 import { generateToken } from "../utils/generateToken.js";
-import { cloudinaryInstance } from "../config/cloudinaryConfig.js";
 import { Notification } from "../models/notificatioModel.js";
+import { cloudinaryInstance as cloudinary } from '../config/cloudinaryConfig.js';
+
 
 
 
@@ -151,10 +152,12 @@ export const getAllUsers = async(req, res, next)=>{
      }
 }
 
-export const userUpdate = async (req, res, next) => {
+
+export const userUpdate = async (req, res) => {
     try {
         const { name, email, phone, location } = req.body;
         const { id } = req.params;
+        const file = req.file;
 
         // Find the user by ID
         const userExist = await User.findById(id);
@@ -168,6 +171,20 @@ export const userUpdate = async (req, res, next) => {
         if (email) updateData.email = email;
         if (phone) updateData.phone = phone;
         if (location) updateData.location = location;
+
+        // Handle file upload
+        if (file) {
+            const result = await new Promise((resolve, reject) => {
+                cloudinary.uploader.upload_stream({ folder: 'profile-pics' }, (error, result) => {
+                    if (error) {
+                        reject(error);
+                    }
+                    resolve(result);
+                }).end(file.buffer);
+            });
+
+            updateData.profilePic = result.secure_url; // Save the file URL
+        }
 
         // Update the user and return the updated data
         const updatedUser = await User.findByIdAndUpdate(
