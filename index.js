@@ -40,8 +40,17 @@ app.use(cookieParser());
 // Connect to the database
 connectDB();
 
+app.get("/", (req, res) => {
+    res.send("Hello World!");
+});
+
+
 // Set up API routes
 app.use('/api', apiRouter);
+
+app.all("*", (req, res, next) => {
+    res.status(404).json({ message: "end point does not exist" });
+});
 
 // Start the server
 app.listen(PORT, () => {
