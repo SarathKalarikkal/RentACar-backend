@@ -29,7 +29,7 @@ app.use('/uploads', express.static(uploadDir));
 
 // Middleware setup
 app.use(cors({
-    origin: 'https://rent-a-car-amber.vercel.app/",
+    origin: "https://rent-a-car-amber.vercel.app/",
     credentials: true
 }));
 app.use(bodyParser.urlencoded({ extended: false }));
